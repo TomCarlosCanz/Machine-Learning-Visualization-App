@@ -1,8 +1,8 @@
 # Machine Learning Visualization App
 
 ## Why this App exists
-    This app is a visual education tool that helps users understand AI-Algorithms visually. I used it in combination with a keynote as part of a mandatory 20 minute
-    presentation for school. Feel free to use it however you want, just note that one has to do so with their own discretion. All information is provided without any express or implied warranties. Please also always double-check important details
+This app is a visual education tool that helps users understand AI-Algorithms visually. I used it in combination with a keynote as part of a mandatory 20 minute
+presentation for school. Feel free to use it however you want, just note that one has to do so with their own discretion. All information is provided without any express or implied warranties. Please also always double-check important details
     
     
 
