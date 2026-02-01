@@ -11,5 +11,6 @@ Since this is a pure SwiftUI App, running it requires a Mac. Additionally, this 
 
 Linear regression formulas and additional information: https://www.geeksforgeeks.org/machine-learning/ml-linear-regression/
 K-means clustering formulas and additional information: https://www.geeksforgeeks.org/machine-learning/k-means-clustering-introduction/
+Reinforcment Learning formulas and additional information: https://www.geeksforgeeks.org/machine-learning/what-is-reinforcement-learning/
 
 Additional help with interpreting formulas into Swift code, combining pieces of code, and bugs by Claude.ai
