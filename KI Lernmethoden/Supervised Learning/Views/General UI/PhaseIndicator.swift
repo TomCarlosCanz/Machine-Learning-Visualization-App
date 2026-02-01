@@ -7,83 +7,13 @@
 import SwiftUI
 
 struct PhaseIndicator: View {
+    
+    //VARIABELS
     var phase: TrainingPhase
     var currentEpoch: Int
     var totalEpochs: Int
     var gradientMagnitude: Double
     var isStepMode: Bool
-    
-    var body: some View {
-        HStack(spacing: 12) {
-            // Phase icon and label
-            HStack(spacing: 6) {
-                Group {
-                    switch phase {
-                    case .idle:
-                        Image(systemName: "pause.circle.fill")
-                            .foregroundStyle(.gray)
-                    case .training:
-                        Image(systemName: "arrow.triangle.2.circlepath")
-                            .foregroundStyle(.orange)
-                            .symbolEffect(.rotate, options: .repeat(.continuous))
-                    case .makingPrediction:
-                        Image(systemName: "arrow.forward.circle.fill")
-                            .foregroundStyle(.blue)
-                            .symbolEffect(.pulse, options: .repeat(.continuous))
-                    case .calculatingError:
-                        Image(systemName: "ruler.fill")
-                            .foregroundStyle(.red)
-                            .symbolEffect(.pulse, options: .repeat(.continuous))
-                    case .learningFromError:
-                        Image(systemName: "brain.head.profile")
-                            .foregroundStyle(.green)
-                            .symbolEffect(.pulse, options: .repeat(.continuous))
-                    case .testing, .adjusting:
-                        // Not used anymore
-                        EmptyView()
-                    }
-                }
-                .font(.title3)
-                
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(phaseText)
-                        .font(.headline)
-                        .foregroundStyle(phaseColor)
-                    
-                    Text(phaseDescription)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    
-                    if phase != .idle {
-                        Text("Epoche \(currentEpoch)/\(totalEpochs)")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-            }
-            
-            Spacer()
-            
-            // Gradient magnitude indicator (when learning)
-            if phase == .training || phase == .learningFromError {
-                VStack(alignment: .trailing, spacing: 2) {
-                    Text("Gradient")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    Text(gradientMagnitude, format: .number.precision(.fractionLength(4)))
-                        .font(.caption)
-                        .monospaced()
-                        .foregroundStyle(phaseColor)
-                }
-            }
-        }
-        .padding(12)
-        .background(phaseColor.opacity(0.1), in: RoundedRectangle(cornerRadius: 12))
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(phaseColor.opacity(0.3), lineWidth: 2)
-        )
-    }
     
     var phaseText: String {
         switch phase {
@@ -135,4 +65,87 @@ struct PhaseIndicator: View {
             return .gray
         }
     }
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            //HEADER: (animated) Icons
+            HStack(spacing: 6) {
+                Group {
+                    switch phase {
+                    case .idle:
+                        Image(systemName: "pause.circle.fill")
+                            .foregroundStyle(.gray)
+                    case .training:
+                        Image(systemName: "arrow.triangle.2.circlepath")
+                            .foregroundStyle(.orange)
+                            .symbolEffect(.rotate, options: .repeat(.continuous))
+                    case .makingPrediction:
+                        Image(systemName: "arrow.forward.circle.fill")
+                            .foregroundStyle(.blue)
+                            .symbolEffect(.pulse, options: .repeat(.continuous))
+                    case .calculatingError:
+                        Image(systemName: "ruler.fill")
+                            .foregroundStyle(.red)
+                            .symbolEffect(.pulse, options: .repeat(.continuous))
+                    case .learningFromError:
+                        Image(systemName: "brain.head.profile")
+                            .foregroundStyle(.green)
+                            .symbolEffect(.pulse, options: .repeat(.continuous))
+                    case .testing, .adjusting:
+                        // Not used anymore
+                        EmptyView()
+                    }
+                }
+                .font(.title3)
+                
+                
+                //BODY: text and description
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(phaseText)
+                        .font(.headline)
+                        .foregroundStyle(phaseColor)
+                    
+                    Text(phaseDescription)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    
+                    if phase != .idle {
+                        Text("Epoche \(currentEpoch)/\(totalEpochs)")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            
+            Spacer()
+            
+            
+            
+            //GRADIENT (or better said MSE); only visible when training
+            if phase == .training || phase == .learningFromError {
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text("Gradient")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text(gradientMagnitude, format: .number.precision(.fractionLength(4)))
+                        .font(.caption)
+                        .monospaced()
+                        .foregroundStyle(phaseColor)
+                }
+            }
+        }
+        .padding(12)
+        .background(phaseColor.opacity(0.1), in: RoundedRectangle(cornerRadius: 12))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(phaseColor.opacity(0.3), lineWidth: 2)
+        )
+    }
 }
+
+/*
+ WHAT THIS CODE DOES:
+ - Indicator for what phase the training is currently in
+ - At the top of the screen
+ - Phases only visible when in step by step mode, not when in continuous training (indicated by .training)
+ */

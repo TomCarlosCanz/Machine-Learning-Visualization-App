@@ -4,8 +4,6 @@
 //
 //  Created by Tom Canz on 05.01.26.
 //
-
-
 import SwiftUI
 
 struct MLSidebarView: View {
@@ -14,7 +12,7 @@ struct MLSidebarView: View {
     var body: some View {
         List(selection: $selection) {
             Section("Machine Learning") {
-                ForEach([MLSidebarItem.supervised, MLSidebarItem.unsupervised]) { item in
+                ForEach([MLSidebarItem.supervised, MLSidebarItem.unsupervised, MLSidebarItem.reinforcement]) { item in
                     Label {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(item.rawValue)

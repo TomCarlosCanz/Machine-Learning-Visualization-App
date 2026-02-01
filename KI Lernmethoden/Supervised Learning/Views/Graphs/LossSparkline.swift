@@ -32,3 +32,8 @@ struct LossSparkline: View {
         .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 12))
     }
 }
+
+/*
+ WHAT THIS CODE DOES:
+ - increasingly adds MSE Points and combines them with the help of handy dandy Path (also such a nice feature from apple)
+ */

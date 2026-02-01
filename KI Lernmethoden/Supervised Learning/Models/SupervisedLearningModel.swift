@@ -111,3 +111,9 @@ enum TrainingPhase {
     case calculatingError      // 2. Calculate deviation from actual results
     case learningFromError     // 3. Update parameters based on errors
 }
+
+
+/*
+ WHAT THIS CODE DOES:
+ - The model of the model (if that makes sense): data used by viewModel
+ */

@@ -10,7 +10,7 @@ import Combine
 @MainActor
 final class RegressionVM: ObservableObject {
     
-    //VARIABLES
+    //VARIABLES (maybe too many @Published variables honestly haha)
     @Published var points: [SamplePoint] = []
     @Published var slope: Double = 0
     @Published var intercept: Double = 0
@@ -25,18 +25,15 @@ final class RegressionVM: ObservableObject {
     @Published var gradientMagnitude: Double = 0
     @Published var selectedScenario: Scenario = .weather
     
-    // New: Training mode
     @Published var trainingMode: TrainingMode = .continuous
     @Published var isStepMode = false
     
-    // Step mode visualization data
     @Published var currentPredictions: [Double] = []
     @Published var currentErrors: [Double] = []
     @Published var showErrorLines = false
     
     private var timerCancellable: AnyCancellable?
     
-    // Step mode state
     private var stepA: Double = 0
     private var stepB: Double = 0
     private var stepGradA: Double = 0
@@ -49,7 +46,7 @@ final class RegressionVM: ObservableObject {
         var pts: [SamplePoint] = []
         let xs = stride(from: 0.0, through: 1.0, by: 1.0/Double(n-1))
         
-        // Generate points - all used for training
+        //Generate points - all used for training
         for x in xs {
             let y = scenario.trueSlope * x + scenario.trueIntercept + Double.random(in: -scenario.noise...scenario.noise)
             pts.append(.init(x: x, y: y))
@@ -58,7 +55,7 @@ final class RegressionVM: ObservableObject {
         withAnimation(.spring(response: 0.6, dampingFraction: 0.9)) {
             points = pts
             slope = 0
-            intercept = 0.5
+            intercept = 0
             lossHistory.removeAll()
             currentEpoch = 0
             currentPhase = .idle
@@ -71,6 +68,7 @@ final class RegressionVM: ObservableObject {
         trainLoss = mse(a: slope, b: intercept, points: points)
     }
 
+    //formula for calculating error rate (MSE)
     func mse(a: Double, b: Double, points: [SamplePoint]) -> Double {
         guard !points.isEmpty else { return 0 }
         let n = Double(points.count)
@@ -81,8 +79,7 @@ final class RegressionVM: ObservableObject {
         return s / n
     }
     
-    // MARK: - Step-by-Step Training
-    
+//reset of variables (step 1)
     func startStepMode() {
         isStepMode = true
         currentEpoch = 0
@@ -99,12 +96,12 @@ final class RegressionVM: ObservableObject {
         }
     }
     
+    // start process
     func nextStep() {
         guard isStepMode else { return }
         
         switch currentPhase {
         case .idle:
-            // Should not happen, but handle it
             withAnimation {
                 currentPhase = .makingPrediction
             }
@@ -121,7 +118,7 @@ final class RegressionVM: ObservableObject {
             }
             
         case .calculatingError:
-            // Step 2: Calculate errors (deviations from actual values)
+            // Step 2: Calculate errors
             let errors = zip(points, currentPredictions).map { point, prediction in
                 prediction - point.y
             }
@@ -133,7 +130,7 @@ final class RegressionVM: ObservableObject {
             }
             
         case .learningFromError:
-            // Step 3: Learn from errors - compute gradients and update parameters
+            // Step 3: Learn from errors
             let pts = points
             let n = Double(pts.count)
             var da = 0.0, db = 0.0
@@ -154,7 +151,7 @@ final class RegressionVM: ObservableObject {
             stepA -= lr * stepGradA
             stepB -= lr * stepGradB
             
-            // Calculate loss
+            // Calculate mse
             let tl = mse(a: stepA, b: stepB, points: points)
             trainLoss = tl
             lossHistory.append(tl)
@@ -186,12 +183,13 @@ final class RegressionVM: ObservableObject {
                 }
             }
             
+            //basically this is here for compliance with TrainingPhase
         case .training, .testing, .adjusting:
-            // Legacy phases - treat as idle
             break
         }
     }
     
+    //pause button
     func stopStepMode() {
         isStepMode = false
         withAnimation {
@@ -203,8 +201,8 @@ final class RegressionVM: ObservableObject {
         }
     }
 
-    // MARK: - Continuous Training
     
+    //Make corrections (step 3)
     func fitGradientDescent() {
         guard !isTraining else { return }
         isTraining = true
@@ -222,12 +220,12 @@ final class RegressionVM: ObservableObject {
         timerCancellable = Timer.publish(every: 0.01, on: .main, in: .common).autoconnect().sink { [weak self] _ in
             guard let self = self else { return }
             
-            // Check if enough time has passed based on current speed setting
+            // Checks speed
             let now = Date()
             guard now.timeIntervalSince(lastUpdateTime) >= self.speed else { return }
             lastUpdateTime = now
             
-            // Check if we're done with all epochs
+            // Check if done with epochs
             if self.currentEpoch >= self.epochs {
                 self.isTraining = false
                 self.currentPhase = .idle
@@ -250,7 +248,7 @@ final class RegressionVM: ObservableObject {
                 db += err
             }
             
-            // Scale gradients
+            // Scale it
             da = (2.0/n) * da
             db = (2.0/n) * db
             
@@ -282,6 +280,8 @@ final class RegressionVM: ObservableObject {
         }
     }
     
+    
+    //stop function (doesn't reset)
     func stopTraining() {
         isTraining = false
         timerCancellable?.cancel()
@@ -296,3 +296,10 @@ enum TrainingMode: String, CaseIterable {
     case continuous = "Kontinuierlich"
     case stepByStep = "Schritt für Schritt"
 }
+
+/*
+ WHAT THIS CODE DOES:
+ - this is the actual Supervised Learning training method (Gradient Descent)
+ - nextStep is for step by step
+ - fitGradientDescent is for continuous mode
+ */

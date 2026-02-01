@@ -7,14 +7,42 @@
 import SwiftUI
 
 struct ScenarioEvaluation: View {
+    
+    //VARIABLES
     @ObservedObject var vm: RegressionVM
     
     var sampleXValues: [Double] {
         [0.25, 0.5, 0.75]
     }
     
+    var qualityText: String {
+        let mse = vm.trainLoss
+        if mse < 0.01 { return "Ausgezeichnete Anpassung" }
+        else if mse < 0.05 { return "Gute Anpassung" }
+        else if mse < 0.1 { return "Akzeptable Anpassung" }
+        else { return "Verbesserungsbedarf" }
+    }
+    
+    var qualityIcon: String {
+        let mse = vm.trainLoss
+        if mse < 0.01 { return "star.fill" }
+        else if mse < 0.05 { return "checkmark.circle.fill" }
+        else if mse < 0.1 { return "exclamationmark.circle.fill" }
+        else { return "xmark.circle.fill" }
+    }
+    
+    var qualityColor: Color {
+        let mse = vm.trainLoss
+        if mse < 0.01 { return .green }
+        else if mse < 0.05 { return .green }
+        else if mse < 0.1 { return .orange }
+        else { return .red }
+    }
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
+            
+            //TITLE
             HStack {
                 Image(systemName: "chart.bar.doc.horizontal")
                     .foregroundStyle(.orange)
@@ -33,6 +61,9 @@ struct ScenarioEvaluation: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
             
+            
+            //LazyVGrid is sooo good I love it
+            //efficient way of displaying the three cards
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                 ForEach(sampleXValues, id: \.self) { x in
                     let prediction = vm.slope * x + vm.intercept
@@ -40,7 +71,7 @@ struct ScenarioEvaluation: View {
                 }
             }
             
-            // Model quality indicator with MSE
+            //Evaluation of how good the model is (just checking the MSE actually)
             VStack(spacing: 8) {
                 HStack(spacing: 8) {
                     Image(systemName: qualityIcon)
@@ -73,28 +104,10 @@ struct ScenarioEvaluation: View {
         .padding(16)
         .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 16))
     }
-    
-    var qualityText: String {
-        let mse = vm.trainLoss
-        if mse < 0.01 { return "Ausgezeichnete Anpassung" }
-        else if mse < 0.05 { return "Gute Anpassung" }
-        else if mse < 0.1 { return "Akzeptable Anpassung" }
-        else { return "Verbesserungsbedarf" }
-    }
-    
-    var qualityIcon: String {
-        let mse = vm.trainLoss
-        if mse < 0.01 { return "star.fill" }
-        else if mse < 0.05 { return "checkmark.circle.fill" }
-        else if mse < 0.1 { return "exclamationmark.circle.fill" }
-        else { return "xmark.circle.fill" }
-    }
-    
-    var qualityColor: Color {
-        let mse = vm.trainLoss
-        if mse < 0.01 { return .green }
-        else if mse < 0.05 { return .green }
-        else if mse < 0.1 { return .orange }
-        else { return .red }
-    }
 }
+
+/*
+ WHAT THIS CODE DOES
+ - combining cards with some additional UI views
+ - Title and MSE evaluation
+ */

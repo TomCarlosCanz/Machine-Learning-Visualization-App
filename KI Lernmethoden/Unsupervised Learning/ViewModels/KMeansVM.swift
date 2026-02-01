@@ -44,20 +44,28 @@ final class KMeansVM: ObservableObject {
         
         switch datasetType {
         case .blobs:
-            // Three well-separated blobs
-            let centers = [(0.3, 0.3), (0.7, 0.7), (0.3, 0.7)]
-            for center in centers {
-                for _ in 0..<(n/3) {
-                    let x = center.0 + Double.random(in: -0.1...0.1)
-                    let y = center.1 + Double.random(in: -0.1...0.1)
-                    pts.append(ClusterPoint(x: x, y: y))
+            // Three well-separated blobs with DIFFERENT sizes
+            let centers = [(0.25, 0.25), (0.75, 0.75), (0.25, 0.75)]
+            let clusterSizes = [50, 30, 20] // Different cluster sizes: 50%, 30%, 20%
+            let scatterAmounts = [0.15, 0.15, 0.15]
+            
+            for (index, center) in centers.enumerated() {
+                for _ in 0..<clusterSizes[index] {
+                    // More scattered distribution
+                    let scatter = scatterAmounts[index]
+                    let x = center.0 + Double.random(in: -scatter...scatter)
+                    let y = center.1 + Double.random(in: -scatter...scatter)
+                    
+                    pts.append(ClusterPoint(x: max(0.05, min(0.95, x)),
+                                          y: max(0.05, min(0.95, y))))
                 }
             }
             
         case .random:
             // Completely random
             for _ in 0..<n {
-                pts.append(ClusterPoint(x: Double.random(in: 0.1...0.9), y: Double.random(in: 0.1...0.9)))
+                pts.append(ClusterPoint(x: Double.random(in: 0.1...0.9),
+                                      y: Double.random(in: 0.1...0.9)))
             }
         }
         

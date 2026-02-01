@@ -45,7 +45,8 @@ struct KMeansDetail: View {
                 ClusterPlot(
                     points: vm.points,
                     centroids: vm.centroids,
-                    phase: vm.currentPhase
+                    phase: vm.currentPhase,
+                    datasetType: vm.datasetType
                 )
                 .padding(.horizontal)
                 

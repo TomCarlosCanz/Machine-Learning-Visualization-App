@@ -20,48 +20,6 @@ struct ClusterStatistics: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            // Prominent Real-World Application Card
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(spacing: 8) {
-                    Image(systemName: "briefcase.circle.fill")
-                        .foregroundStyle(.orange)
-                    
-                    Text("Praxis-Anwendung")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                    
-                    Spacer()
-                    
-                    Text(vm.datasetType.rawValue)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(.ultraThinMaterial, in: Capsule())
-                }
-                
-                ScrollView {
-                    Text(useCaseExample)
-                        .font(.subheadline)
-                        .foregroundStyle(.primary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                .frame(maxHeight: 250)
-            }
-            .padding(12)
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(
-                        LinearGradient(
-                            colors: [.orange.opacity(0.3), .pink.opacity(0.3)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: 1.5
-                    )
-            )
-            
             // Cluster Analysis Section
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 8) {
@@ -93,7 +51,7 @@ struct ClusterStatistics: View {
                                     .shadow(radius: 1)
                                 
                                 VStack(alignment: .leading, spacing: 2) {
-                                    Text("Cluster \(info.id + 1)")
+                                    Text(clusterLabel(for: info.id))
                                         .font(.subheadline)
                                         .bold()
                                     
@@ -157,74 +115,21 @@ struct ClusterStatistics: View {
         }
     }
     
-    var useCaseExample: String {
-        switch vm.datasetType {
-        case .blobs:
-            return interpretBlobsCluster()
-        case .random:
-            return interpretRandomCluster()
-        }
-    }
-    
-    private func interpretBlobsCluster() -> String {
-        guard !vm.centroids.isEmpty else {
-            return "E-Commerce Beispiel: Kunden nach Kaufverhalten gruppieren."
+    func clusterLabel(for clusterId: Int) -> String {
+        guard vm.datasetType == .blobs, vm.hasConverged else {
+            return "Cluster \(clusterId + 1)"
         }
         
-        // Only show interpretation after convergence
-        guard vm.hasConverged else {
-            return "📊 E-Commerce Kundensegmentierung\n\nAnalyse läuft..."
+        // Sort clusters by price (y-axis) to assign labels
+        let sortedCentroids = vm.centroids.sorted { $0.y < $1.y }
+        let labels = ["💰 Günstige Käufer", "🛍️ Durchschnittliche Käufer", "💎 Luxus-Käufer"]
+        
+        if let index = sortedCentroids.firstIndex(where: { $0.clusterId == clusterId }),
+           index < labels.count {
+            return labels[index]
         }
         
-        var interpretation = "📊 E-Commerce Kundensegmentierung\n\n"
-        
-        for (index, info) in clusterInfo.enumerated() {
-            let percentage = Double(info.count) / Double(totalPoints) * 100
-            let meaning: String
-            let emoji: String
-            
-            switch index {
-            case 0:
-                meaning = "Budget-Käufer mit niedrigen Ausgaben"
-                emoji = "🔴"
-            case 1:
-                meaning = "Standard-Käufer mit moderatem Kaufverhalten"
-                emoji = "🔵"
-            case 2:
-                meaning = "Premium-Kunden mit hohen Ausgaben"
-                emoji = "🟢"
-            default:
-                meaning = "Weitere Kundengruppe"
-                emoji = "⚪️"
-            }
-            
-            interpretation += "\(emoji) \(meaning) (\(Int(percentage))%)\n"
-        }
-        
-        return interpretation
-    }
-    
-    private func interpretRandomCluster() -> String {
-        guard !vm.centroids.isEmpty else {
-            return "Keine echte Praxis-Anwendung: Zufällige Daten haben keine natürliche Gruppierung."
-        }
-        
-        var interpretation = "🎲 Keine echte Praxis-Anwendung\n\n"
-        interpretation += "Diese Daten sind komplett zufällig verteilt - es gibt keine natürliche Gruppierung.\n\n"
-        
-        for (index, info) in clusterInfo.enumerated() {
-            let percentage = Double(info.count) / Double(totalPoints) * 100
-            interpretation += "• Cluster \(index + 1): \(Int(percentage))%\n"
-        }
-        
-        let inertiaValue = vm.inertia
-        interpretation += "\n📊 Inertia: \(String(format: "%.2f", inertiaValue))\n"
-        
-        if inertiaValue > 2.5 {
-            interpretation += "❌ Sehr hoher Wert - Cluster sind bedeutungslos"
-        }
-        
-        return interpretation
+        return "Cluster \(clusterId + 1)"
     }
     
     private var totalPoints: Int {

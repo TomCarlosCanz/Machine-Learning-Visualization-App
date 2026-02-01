@@ -9,6 +9,7 @@ import SwiftUI
 struct UnifiedMLAppShell: View {
     @StateObject private var regressionVM = RegressionVM()
     @StateObject private var kmeansVM = KMeansVM()
+    @StateObject private var mazeVM = MazeViewModel()
     @State private var selection: MLSidebarItem? = .supervised
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
     
@@ -22,6 +23,8 @@ struct UnifiedMLAppShell: View {
                     SupervisedLearningView(vm: regressionVM)
                 case .unsupervised:
                     UnsupervisedLearningView(vm: kmeansVM)
+                case .reinforcement:
+                    ReinforcementLearningView(vm: mazeVM)
                 case .settings:
                     SettingsView()
                 }
@@ -60,11 +63,20 @@ struct UnifiedMLAppShell: View {
                 kmeansVM.reset()
             }
             .disabled(kmeansVM.isRunning)
+        case .reinforcement:
+            Button("Reset") {
+                mazeVM.reset()
+            }
+            .disabled(mazeVM.isTraining || mazeVM.isStepMode)
         case .settings, .none:
             EmptyView()
         }
     }
 }
+
+/*WHY THIS EXISTS
+ I am using this UnifiedMLAppShell, since the functionality is the exact same for Supervised- and Unsupervised Learning --> reusable
+ */
 
 // MARK: - Supervised Learning View
 struct SupervisedLearningView: View {
@@ -110,7 +122,8 @@ struct SupervisedLearningView: View {
                     b: vm.intercept,
                     phase: vm.currentPhase,
                     predictions: vm.currentPredictions,
-                    showErrorLines: vm.showErrorLines
+                    showErrorLines: vm.showErrorLines,
+                    scenario: vm.selectedScenario  // Just pass the scenario
                 )
                 .padding(.horizontal)
 
@@ -237,7 +250,8 @@ struct UnsupervisedLearningView: View {
                 ClusterPlot(
                     points: vm.points,
                     centroids: vm.centroids,
-                    phase: vm.currentPhase
+                    phase: vm.currentPhase,
+                    datasetType: vm.datasetType
                 )
                 .padding(.horizontal)
                 
@@ -310,6 +324,168 @@ struct UnsupervisedLearningView: View {
     }
 }
 
+// MARK: - Reinforcement Learning View
+struct ReinforcementLearningView: View {
+    @ObservedObject var vm: MazeViewModel
+    
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 18) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Reinforcement Learning")
+                        .font(.system(.largeTitle, design: .rounded))
+                        .bold()
+                    
+                    Text("Q-Learning Labyrinth-Navigator")
+                        .font(.title3)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal)
+                
+                // Training mode picker
+                Picker("Trainingsmodus", selection: $vm.trainingMode) {
+                    ForEach(RLTrainingMode.allCases, id: \.self) { mode in
+                        Text(mode.rawValue).tag(mode)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .padding(.horizontal)
+                .disabled(vm.isTraining || vm.isStepMode)
+                
+                // Step-by-step info (only in step mode)
+                if vm.isStepMode {
+                    RLStepInfoView(
+                        currentPhase: vm.currentPhase,
+                        currentAction: vm.currentAction,
+                        currentReward: vm.currentReward,
+                        lastQValue: vm.lastQValue,
+                        newQValue: vm.newQValue
+                    )
+                    .padding(.horizontal)
+                }
+                
+                // Maze
+                MazeGridView(viewModel: vm)
+                    .aspectRatio(1.0, contentMode: .fit)
+                    .background(
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 20)
+                                .fill(Color(white: 0.97))
+                            
+                            RoundedRectangle(cornerRadius: 20)
+                                .stroke(Color.black.opacity(0.05), lineWidth: 1)
+                                .padding(1)
+                        }
+                    )
+                    .cornerRadius(20)
+                    .shadow(color: .black.opacity(0.12), radius: 25, x: 0, y: 12)
+                    .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 4)
+                    .padding(.horizontal)
+                
+                // Success Rate Chart
+                if !vm.episodeRewards.isEmpty {
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text("Belohnungsverlauf")
+                                .font(.headline)
+                            Spacer()
+                            HStack(spacing: 4) {
+                                Circle().fill(.blue).frame(width: 8, height: 8)
+                                Text("Belohnungen").font(.caption).foregroundStyle(.secondary)
+                            }
+                        }
+                        RLRewardSparkline(values: vm.episodeRewards)
+                    }
+                    .padding(.horizontal)
+                }
+                
+                // Legend
+                RLLegendSection()
+                    .padding(.horizontal)
+            }
+            .padding(.vertical)
+        }
+        .toolbar {
+            ToolbarItemGroup(placement: .navigationBarTrailing) {
+                if vm.trainingMode == .continuous {
+                    // Continuous mode buttons
+                    if vm.isTraining {
+                        Button {
+                            vm.stopTraining()
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: "stop.fill")
+                                Text("Stop")
+                            }
+                        }
+                        .tint(.red)
+                    } else {
+                        Button {
+                            vm.startTraining()
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: "play.fill")
+                                Text("Trainieren")
+                            }
+                        }
+                        .tint(.blue)
+                        
+                        Button {
+                            Task {
+                                await vm.demonstrateLearning()
+                            }
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: "sparkles")
+                                Text("Demo")
+                            }
+                        }
+                        .tint(.green)
+                        .disabled(vm.episode == 0)
+                    }
+                } else {
+                    // Step-by-step mode buttons
+                    if vm.isStepMode {
+                        Button {
+                            vm.stopStepMode()
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: "stop.fill")
+                                Text("Zurücksetzen")
+                            }
+                        }
+                        .tint(.red)
+                        
+                        Button {
+                            vm.nextStep()
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: "arrow.right")
+                                Text("Weiter")
+                            }
+                        }
+                        .tint(.blue)
+                    } else {
+                        Button {
+                            vm.startStepMode()
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: "play.fill")
+                                Text("Starten")
+                            }
+                        }
+                        .tint(.blue)
+                    }
+                }
+            }
+        }
+        .inspector(isPresented: .constant(true)) {
+            RLInspectorView(vm: vm)
+        }
+    }
+}
+
 // MARK: - Settings View
 struct SettingsView: View {
     var body: some View {
@@ -335,6 +511,13 @@ struct SettingsView: View {
                     title: "Unsupervised Learning",
                     description: "Entdecke Muster in ungelabelten Daten mit K-Means",
                     color: .blue
+                )
+                
+                SettingCard(
+                    icon: "arrow.circlepath",
+                    title: "Reinforcement Learning",
+                    description: "Lerne durch Trial-and-Error mit Q-Learning",
+                    color: .green
                 )
             }
             .padding(.horizontal)
@@ -379,3 +562,9 @@ struct SettingCard: View {
         )
     }
 }
+
+
+/*
+ WHAT THIS CODE DOES
+ I combined these files together, because it was easier keep the same UI Style across the whole app
+ */
